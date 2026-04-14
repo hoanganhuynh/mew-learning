@@ -134,6 +134,15 @@ export default function DialoguePlayer() {
           }),
         });
 
+        // 501 = running on Vercel / serverless — filesystem not writable
+        if (res.status === 501) {
+          setDownloadStatus({
+            state: 'unavailable', downloadedCount: 0,
+            totalCount: topic.lines.length, failedLines: [],
+          });
+          return;
+        }
+
         if (res.ok) {
           done++;
         } else {
@@ -202,6 +211,12 @@ export default function DialoguePlayer() {
         method: 'POST',
         body:   formData,
       });
+
+      if (res.status === 501) {
+        // Serverless environment — filesystem not writable
+        setDownloadStatus({ state: 'unavailable', downloadedCount: 0, totalCount: 0, failedLines: [] });
+        return;
+      }
 
       if (res.ok) {
         // Remove this line from failedLines

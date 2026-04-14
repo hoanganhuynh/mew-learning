@@ -18,11 +18,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.VERCEL_ENV);
+
 function topicSlug(id: string): string {
   return id.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (IS_SERVERLESS) {
+    return NextResponse.json(
+      { error: 'filesystem-unavailable', message: 'This feature requires a local server. Audio files cannot be saved on Vercel.' },
+      { status: 501 }
+    );
+  }
+
   let formData: FormData;
   try {
     formData = await req.formData();

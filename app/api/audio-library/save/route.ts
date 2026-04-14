@@ -15,6 +15,12 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
+// ─── Vercel guard ─────────────────────────────────────────────────────────────
+// Vercel's filesystem is read-only — saving audio files to public/ is only
+// possible when running the app locally (Next.js dev or production build).
+
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.VERCEL_ENV);
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SaveRequest {
@@ -55,6 +61,13 @@ function xmlEscape(s: string): string {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (IS_SERVERLESS) {
+    return NextResponse.json(
+      { error: 'filesystem-unavailable', message: 'This feature requires a local server. Audio files cannot be saved on Vercel.' },
+      { status: 501 }
+    );
+  }
+
   const body = (await req.json()) as SaveRequest;
   const { topicId, lineIndex, text, openaiVoice = 'nova' } = body;
 

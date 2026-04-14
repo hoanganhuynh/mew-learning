@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, BookOpen, Tag,
   Download, CheckCircle2, Loader2, RefreshCw, HardDrive,
-  AlertTriangle, Upload, XCircle,
+  AlertTriangle, Upload, XCircle, WifiOff,
 } from 'lucide-react';
 import { difficultyColor, cn } from '@/lib/utils';
 import type { DialogueTopic } from '@/types';
@@ -28,7 +28,7 @@ export interface FailedLine {
 }
 
 export interface DownloadStatus {
-  state:             'idle' | 'checking' | 'downloading' | 'done' | 'partial';
+  state:             'idle' | 'checking' | 'downloading' | 'done' | 'partial' | 'unavailable';
   downloadedCount:   number;
   totalCount:        number;
   failedLines?:      FailedLine[];
@@ -84,7 +84,6 @@ function DownloadButton({ status, onClick }: { status: DownloadStatus; onClick: 
   }
 
   if (state === 'partial' && failCount > 0) {
-    // partial due to Gemini errors
     return (
       <button
         onClick={onClick}
@@ -110,12 +109,25 @@ function DownloadButton({ status, onClick }: { status: DownloadStatus; onClick: 
     );
   }
 
+  if (state === 'unavailable') {
+    return (
+      <div
+        className="flex items-center gap-1.5 text-[11px] font-bold text-brand-muted/50 px-3 py-1.5 rounded-xl bg-brand-input border border-transparent cursor-not-allowed"
+        title="Saving audio files to disk requires running the app locally. Not available on Vercel."
+      >
+        <WifiOff size={12} />
+        <HardDrive size={12} />
+        Local only — not on Vercel
+      </div>
+    );
+  }
+
   // idle
   return (
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 text-[11px] font-bold text-brand-muted px-3 py-1.5 rounded-xl bg-brand-input hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20 transition-all"
-      title="Download all audio lines via Gemini TTS and save to local disk."
+      title="Download all audio lines via Edge TTS and save to local disk."
     >
       <Download size={12} />
       <HardDrive size={12} />
@@ -268,7 +280,7 @@ export default function ContextCard({ topic, downloadStatus, onDownload, onUploa
                 </span>
               </div>
               <p className="text-[10px] text-brand-muted mb-3 leading-relaxed">
-                Gemini could not generate audio for the lines below (quota exceeded or API error).
+                Edge TTS could not generate audio for the lines below (network or API error).
                 You can upload your own WAV or MP3 file for each line — it will be used instead.
               </p>
               <div className="space-y-2">
