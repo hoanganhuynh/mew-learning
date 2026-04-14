@@ -1,6 +1,6 @@
 'use client';
 
-import { Upload, Sparkles } from 'lucide-react';
+import { Upload, Sparkles, ClipboardPaste } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import FileUpload from './FileUpload';
 import AIGeneration from './AIGeneration';
+import JsonPasteImport from './JsonPasteImport';
 import { useAppStore } from '@/store/appStore';
 
 export default function DataManagementPanel() {
@@ -23,7 +24,7 @@ export default function DataManagementPanel() {
         <DialogHeader>
           <DialogTitle>Add Dialogue Content</DialogTitle>
           <DialogDescription>
-            Import an existing file or let AI create a new dialogue for you.
+            Import a file, paste JSON directly, or let AI create a new dialogue for you.
           </DialogDescription>
         </DialogHeader>
 
@@ -32,6 +33,9 @@ export default function DataManagementPanel() {
             <TabsTrigger value="import" className="gap-1.5">
               <Upload size={13} /> Import File
             </TabsTrigger>
+            <TabsTrigger value="paste" className="gap-1.5">
+              <ClipboardPaste size={13} /> Paste JSON
+            </TabsTrigger>
             <TabsTrigger value="generate" className="gap-1.5">
               <Sparkles size={13} /> AI Generate
             </TabsTrigger>
@@ -39,6 +43,10 @@ export default function DataManagementPanel() {
 
           <TabsContent value="import">
             <FileUpload onClose={close} />
+          </TabsContent>
+
+          <TabsContent value="paste">
+            <JsonPasteImport onClose={close} />
           </TabsContent>
 
           <TabsContent value="generate">
