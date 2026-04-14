@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties (Light + Dark Mode) ────────────────────────────── */
+/*
+ * All brand-* Tailwind colours point at these variables (see tailwind.config.ts).
+ * Switching to dark mode only requires toggling the .dark class on <html>.
+ * Values are space-separated RGB triplets so Tailwind opacity modifiers work:
+ *   bg-brand-surface/50  →  rgba(var(--brand-surface), 0.5)
+ */
+:root {
+  --font-nunito: 'Nunito', sans-serif;
+
+  /* Light mode */
+  --brand-bg:       247 247 247;   /* #F7F7F7 — page background      */
+  --brand-surface:  255 255 255;   /* #FFFFFF — card / panel          */
+  --brand-surface2: 245 245 247;   /* #F5F5F7 — nested section        */
+  --brand-text:      75  75  75;   /* #4B4B4B — body text             */
+  --brand-strong:    28  28  28;   /* #1C1C1C — headings              */
+  --brand-muted:    119 119 119;   /* #777777 — secondary / captions  */
+  --brand-border:   229 229 229;   /* #E5E5E5 — dividers / outlines   */
+  --brand-input:    240 240 240;   /* #F0F0F0 — input / pill bg       */
+}
+
+html.dark {
+  /* Dark mode — deep-space palette */
+  --brand-bg:        13  14  20;   /* #0D0E14 — page background       */
+  --brand-surface:   22  23  32;   /* #161720 — card / panel          */
+  --brand-surface2:  30  31  44;   /* #1E1F2C — nested section        */
+  --brand-text:     210 210 220;   /* #D2D2DC — body text             */
+  --brand-strong:   240 240 250;   /* #F0F0FA — headings              */
+  --brand-muted:    130 130 145;   /* #828291 — secondary / captions  */
+  --brand-border:    42  43  58;   /* #2A2B3A — dividers / outlines   */
+  --brand-input:     33  34  47;   /* #21222F — input / pill bg       */
+}
+
+/* ─── Base Reset ────────────────────────────────────────────────────────────── */
+@layer base {
+  * { @apply box-border; }
+
+  html { @apply scroll-smooth; }
+
+  body {
+    @apply bg-brand-bg text-brand-text font-sans antialiased;
+    font-family: 'Nunito', system-ui, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar           { @apply w-1.5; }
+  ::-webkit-scrollbar-track     { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb     { @apply bg-brand-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-brand-muted; }
+}
+
+/* ─── Component Utilities ────────────────────────────────────────────────────── */
+@layer components {
+  /* Duolingo-style card */
+  .card-duo {
+    @apply bg-brand-surface rounded-2xl shadow-card border border-brand-border;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+
+  /* Chat bubble — left speaker */
+  .bubble-left {
+    @apply bg-brand-surface border border-brand-border rounded-2xl rounded-bl-sm shadow-bubble;
+  }
+
+  /* Chat bubble — right speaker */
+  .bubble-right {
+    @apply bg-primary/10 border border-primary/20 rounded-2xl rounded-br-sm shadow-bubble;
+  }
+
+  /* Shimmer skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, rgb(var(--brand-input)) 25%, rgb(var(--brand-border)) 50%, rgb(var(--brand-input)) 75%);
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded;
+  }
+}
+
+/* ─── Focus Styles ───────────────────────────────────────────────────────────── */
+@layer base {
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2;
+  }
+  /* Dark mode ring-offset should be surface colour */
+  html.dark *:focus-visible {
+    ring-offset-color: rgb(var(--brand-surface));
+  }
+}
