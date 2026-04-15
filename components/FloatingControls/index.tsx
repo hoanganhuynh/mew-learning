@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Volume2, ChevronDown } from 'lucide-react';
+import { Volume2, Play, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useAppStore, useCurrentTopic } from '@/store/appStore';
 import { EDGE_VOICES } from '@/types';
+import { speak, stop } from '@/lib/tts';
 import type { SpeechRate, EdgeVoiceId } from '@/types';
 
 const SPEED_OPTIONS: { label: string; value: SpeechRate }[] = [
@@ -17,13 +18,12 @@ const SPEED_OPTIONS: { label: string; value: SpeechRate }[] = [
   { label: '1.25×', value: 1.25 },
 ];
 
+const VOICE_PREVIEW_TEXT = 'Hello, how are you today?';
+
 // ─── Floating pill button ─────────────────────────────────────────────────────
 
 function FabPill({
-  children,
-  onClick,
-  active,
-  title,
+  children, onClick, active, title,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -112,15 +112,36 @@ function VoiceFab() {
   const { settings, setVoiceName } = useAppStore();
   const topic = useCurrentTopic();
   const [open, setOpen] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      if (!ref.current?.contains(e.target as Node)) {
+        setOpen(false);
+        stop();
+        setPreviewingVoice(null);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Stop preview when panel closes
+  useEffect(() => {
+    if (!open) { stop(); setPreviewingVoice(null); }
+  }, [open]);
+
+  const handlePreview = (voiceId: string) => {
+    stop();
+    setPreviewingVoice(voiceId);
+    speak(VOICE_PREVIEW_TEXT, {
+      voice: voiceId,
+      rate: 1.0,
+      onEnd:   () => setPreviewingVoice(null),
+      onError: () => setPreviewingVoice(null),
+    });
+  };
 
   const femaleVoices = EDGE_VOICES.filter((v) => v.gender === 'female');
   const maleVoices   = EDGE_VOICES.filter((v) => v.gender === 'male');
@@ -156,19 +177,30 @@ function VoiceFab() {
                   <p className="text-[9px] font-semibold text-brand-muted uppercase mb-1">♀ Nữ</p>
                   <div className="flex flex-wrap gap-1 mb-1.5">
                     {femaleVoices.map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() => setVoiceName(char, v.id as EdgeVoiceId)}
-                        title={v.description}
-                        className={cn(
-                          'px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-all',
-                          currentVoice === v.id
-                            ? 'bg-primary text-white border-primary'
-                            : 'bg-brand-input text-brand-muted border-transparent hover:border-primary/40 hover:text-primary'
-                        )}
-                      >
-                        {v.label}
-                      </button>
+                      <div key={v.id} className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => setVoiceName(char, v.id as EdgeVoiceId)}
+                          title={v.description}
+                          className={cn(
+                            'px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-all',
+                            currentVoice === v.id
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-brand-input text-brand-muted border-transparent hover:border-primary/40 hover:text-primary'
+                          )}
+                        >
+                          {v.label}
+                        </button>
+                        <button
+                          onClick={() => handlePreview(v.id)}
+                          title={`Preview ${v.label}`}
+                          className="w-5 h-5 flex items-center justify-center rounded-md text-brand-muted hover:text-primary transition-colors"
+                        >
+                          {previewingVoice === v.id
+                            ? <Loader2 size={10} className="animate-spin" />
+                            : <Play size={10} />
+                          }
+                        </button>
+                      </div>
                     ))}
                   </div>
 
@@ -176,19 +208,30 @@ function VoiceFab() {
                   <p className="text-[9px] font-semibold text-brand-muted uppercase mb-1">♂ Nam</p>
                   <div className="flex flex-wrap gap-1">
                     {maleVoices.map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() => setVoiceName(char, v.id as EdgeVoiceId)}
-                        title={v.description}
-                        className={cn(
-                          'px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-all',
-                          currentVoice === v.id
-                            ? 'bg-secondary text-white border-secondary'
-                            : 'bg-brand-input text-brand-muted border-transparent hover:border-secondary/40 hover:text-secondary'
-                        )}
-                      >
-                        {v.label}
-                      </button>
+                      <div key={v.id} className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => setVoiceName(char, v.id as EdgeVoiceId)}
+                          title={v.description}
+                          className={cn(
+                            'px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-all',
+                            currentVoice === v.id
+                              ? 'bg-secondary text-white border-secondary'
+                              : 'bg-brand-input text-brand-muted border-transparent hover:border-secondary/40 hover:text-secondary'
+                          )}
+                        >
+                          {v.label}
+                        </button>
+                        <button
+                          onClick={() => handlePreview(v.id)}
+                          title={`Preview ${v.label}`}
+                          className="w-5 h-5 flex items-center justify-center rounded-md text-brand-muted hover:text-secondary transition-colors"
+                        >
+                          {previewingVoice === v.id
+                            ? <Loader2 size={10} className="animate-spin" />
+                            : <Play size={10} />
+                          }
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

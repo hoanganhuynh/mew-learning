@@ -85,6 +85,49 @@ export default function DialoguePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoPlaying, activeLineIndex, topic?.id]);
 
+  // ── Keyboard shortcuts ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't intercept when typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
+      if (!topic) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isAutoPlaying) {
+          stop();
+          setIsAutoPlaying(false);
+        } else {
+          const line = topic.lines[activeLineIndex];
+          if (line) {
+            speak(line.englishText, {
+              rate:      settings.speechRate,
+              voice:     (settings.voiceName ?? {})[line.characterId] ?? 'nova',
+              localFile: localAudioPath(topic.id, activeLineIndex),
+            });
+          }
+        }
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        stop();
+        setIsAutoPlaying(false);
+        setActiveLineIndex(Math.min(activeLineIndex + 1, topic.lines.length - 1));
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        stop();
+        setIsAutoPlaying(false);
+        setActiveLineIndex(Math.max(activeLineIndex - 1, 0));
+      } else if (e.key === 't' || e.key === 'T') {
+        setSetting('showTranslation', !settings.showTranslation);
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic, activeLineIndex, isAutoPlaying, settings.speechRate, settings.voiceName, settings.showTranslation]);
+
   // ── Download all lines via Edge TTS (free, no rate limit) ───────────────────
   //
   // Edge TTS has no hard rate limit. We add a small pause between requests

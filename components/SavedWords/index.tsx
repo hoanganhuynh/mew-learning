@@ -1,15 +1,21 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { Search, Volume2, Trash2, BookOpen, Pencil, Check, X } from 'lucide-react';
+import { Search, Volume2, Trash2, BookOpen, Pencil, Check, X, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 import { useVocabularyStore } from '@/store/vocabularyStore';
 import { useAppStore } from '@/store/appStore';
 import { speak } from '@/lib/tts';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 export default function SavedWords() {
   const { words, removeWord, updateVietnamese } = useVocabularyStore();
-  const { settings } = useAppStore();
+  const { settings, setCurrentTopic, setAppMode } = useAppStore();
 
   const [query,   setQuery]   = useState('');
   const [editId,  setEditId]  = useState<string | null>(null);
@@ -36,12 +42,18 @@ export default function SavedWords() {
   const commitEdit = (id: string) => {
     updateVietnamese(id, editVal.trim());
     setEditId(null);
+    toast.success('Translation saved');
   };
 
   const cancelEdit = () => setEditId(null);
 
   const handleSpeak = (text: string) => {
     speak(text, { rate: settings.speechRate, gender: 'female' });
+  };
+
+  const handleGoToSource = (topicId: string) => {
+    setCurrentTopic(topicId);
+    setAppMode('dialogue');
   };
 
   // ─── Empty state ─────────────────────────────────────────────────────────────
@@ -100,7 +112,7 @@ export default function SavedWords() {
                 <th className="text-left text-[10px] font-extrabold text-brand-muted uppercase tracking-wider px-3 py-2.5">Từ / Cụm từ</th>
                 <th className="text-left text-[10px] font-extrabold text-brand-muted uppercase tracking-wider px-3 py-2.5">Nghĩa tiếng Việt</th>
                 <th className="text-left text-[10px] font-extrabold text-brand-muted uppercase tracking-wider px-3 py-2.5 hidden md:table-cell">Hội thoại</th>
-                <th className="w-10 md:w-16 px-2 md:px-3 py-2.5"></th>
+                <th className="w-16 md:w-20 px-2 md:px-3 py-2.5"></th>
               </tr>
             </thead>
             <tbody>
@@ -172,9 +184,7 @@ export default function SavedWords() {
                     ) : (
                       <button
                         onClick={() => startEdit(word.id, word.vietnameseText)}
-                        className={cn(
-                          'flex items-center gap-1.5 group/edit w-full text-left rounded-lg px-1.5 py-0.5 -mx-1.5 hover:bg-brand-bg transition-colors',
-                        )}
+                        className="flex items-center gap-1.5 group/edit w-full text-left rounded-lg px-1.5 py-0.5 -mx-1.5 hover:bg-brand-bg transition-colors"
                         title="Nhấn để sửa nghĩa"
                       >
                         <span className={cn('text-sm leading-tight flex-1', word.vietnameseText ? 'text-brand-text' : 'text-brand-muted italic')}>
@@ -194,13 +204,42 @@ export default function SavedWords() {
 
                   {/* Actions */}
                   <td className="px-3 py-3">
-                    <button
-                      onClick={() => removeWord(word.id)}
-                      title="Xóa từ này"
-                      className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg bg-danger/10 text-danger hover:bg-danger/20 flex items-center justify-center transition-all"
-                    >
-                      <Trash2 size={11} />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Jump to source */}
+                      <button
+                        onClick={() => handleGoToSource(word.topicId)}
+                        title="Go to source dialogue"
+                        className="w-6 h-6 rounded-lg bg-brand-input text-brand-muted hover:bg-primary/10 hover:text-primary flex items-center justify-center transition-colors"
+                      >
+                        <ExternalLink size={11} />
+                      </button>
+
+                      {/* Confirm delete */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            title="Xóa từ này"
+                            className="w-6 h-6 rounded-lg bg-danger/10 text-danger hover:bg-danger/20 flex items-center justify-center transition-colors"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove word?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              &ldquo;{word.text}&rdquo; will be removed from your vocabulary list.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => { removeWord(word.id); toast.success('Word removed'); }}>
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </td>
                 </tr>
               ))}

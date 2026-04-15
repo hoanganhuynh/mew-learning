@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { BookmarkPlus, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useVocabularyStore } from '@/store/vocabularyStore';
 import type { TranslateResult } from '@/types/vocabulary';
 
@@ -94,6 +95,7 @@ export default function VocabularyTooltip() {
       lineId:         selection.lineId,
       lineContext:    selection.lineContext,
     });
+    toast.success(`"${selection.text}" saved to vocabulary`);
     setSelection(null);
     window.getSelection()?.removeAllRanges();
   }, [selection, result, overrideVi, addWord]);

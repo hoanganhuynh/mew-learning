@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, BookMarked, Heart } from 'lucide-react';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -23,10 +22,11 @@ type AppMode = 'dialogue' | 'vocabulary' | 'favorites';
  *
  *  Modes (toggled via tabs below the header):
  *    • Dialogue Practice  — topic list + dialogue player + pronunciation
- *    • Training Talk      — virtual character + turn-by-turn conversation
+ *    • Saved Words        — vocabulary list
+ *    • Yêu Thích          — favorite topics
  */
 export default function Home() {
-  const [mode, setMode] = useState<AppMode>('dialogue');
+  const { appMode: mode, setAppMode: setMode } = useAppStore();
   const wordCount  = useVocabularyStore((s) => s.words.length);
   const favCount   = useAppStore((s) => s.favoriteTopicIds.length);
 
@@ -123,7 +123,7 @@ export default function Home() {
         </div>
 
         {/* ── Mobile bottom navigation ────────────────────────────────────── */}
-        <MobileNav mode={mode} setMode={setMode} />
+        <MobileNav />
 
         {/* ── Global modals ───────────────────────────────────────────────── */}
         <SettingsPanel />

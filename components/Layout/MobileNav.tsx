@@ -8,11 +8,6 @@ import { useVocabularyStore } from '@/store/vocabularyStore';
 
 type AppMode = 'dialogue' | 'vocabulary' | 'favorites';
 
-interface Props {
-  mode:    AppMode;
-  setMode: (m: AppMode) => void;
-}
-
 interface NavItem {
   id:      AppMode | 'setting';
   label:   string;
@@ -20,8 +15,8 @@ interface NavItem {
   badge?:  number;
 }
 
-export default function MobileNav({ mode, setMode }: Props) {
-  const { setSettingsPanelOpen, favoriteTopicIds } = useAppStore();
+export default function MobileNav() {
+  const { setSettingsPanelOpen, favoriteTopicIds, appMode: mode, setAppMode: setMode } = useAppStore();
   const wordCount = useVocabularyStore((s) => s.words.length);
   const favCount  = favoriteTopicIds.length;
 

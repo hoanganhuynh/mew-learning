@@ -41,6 +41,8 @@ const defaultPractice: PracticeState = {
 
 // ─── Store interface ──────────────────────────────────────────────────────────
 
+type AppMode = 'dialogue' | 'vocabulary' | 'favorites';
+
 interface AppStore {
   topics: DialogueTopic[];
   currentTopicId: string | null;
@@ -51,6 +53,7 @@ interface AppStore {
   dataPanelOpen: boolean;
   sidebarOpen: boolean;
   favoriteTopicIds: string[];
+  appMode: AppMode;
 
   setCurrentTopic:     (id: string | null) => void;
   addTopics:           (topics: DialogueTopic[]) => void;
@@ -70,6 +73,7 @@ interface AppStore {
   setDataPanelOpen:    (open: boolean) => void;
   setSidebarOpen:      (open: boolean) => void;
   toggleFavorite:      (id: string) => void;
+  setAppMode:          (mode: AppMode) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -86,6 +90,7 @@ export const useAppStore = create<AppStore>()(
       dataPanelOpen:    false,
       sidebarOpen:      true,
       favoriteTopicIds: [],
+      appMode:          'dialogue',
 
       // ── Topics ─────────────────────────────────────────────────────────────
       setCurrentTopic: (id) =>
@@ -151,6 +156,9 @@ export const useAppStore = create<AppStore>()(
             ? s.favoriteTopicIds.filter((f) => f !== id)
             : [...s.favoriteTopicIds, id],
         })),
+
+      // ── App mode ───────────────────────────────────────────────────────────
+      setAppMode: (mode) => set({ appMode: mode }),
     }),
     {
       // Same key as before — user topics are preserved.

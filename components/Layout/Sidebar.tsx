@@ -1,12 +1,21 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Plus, Trash2, ChevronRight, Heart } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, ChevronRight, Heart, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAppStore } from '@/store/appStore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { cn, difficultyColor } from '@/lib/utils';
 import type { DialogueTopic } from '@/types';
+
+type DiffFilter = '' | 'beginner' | 'intermediate' | 'advanced';
 
 function TopicItem({ topic, isActive }: { topic: DialogueTopic; isActive: boolean }) {
   const { setCurrentTopic, removeTopic, toggleFavorite, favoriteTopicIds } = useAppStore();
@@ -30,12 +39,10 @@ function TopicItem({ topic, isActive }: { topic: DialogueTopic; isActive: boolea
         )}
       >
         {/* Icon */}
-        <div
-          className={cn(
-            'mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-            isActive ? 'bg-primary text-white' : 'bg-brand-input text-brand-muted'
-          )}
-        >
+        <div className={cn(
+          'mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+          isActive ? 'bg-primary text-white' : 'bg-brand-input text-brand-muted'
+        )}>
           <MessageSquare size={15} />
         </div>
 
@@ -50,9 +57,7 @@ function TopicItem({ topic, isActive }: { topic: DialogueTopic; isActive: boolea
                 {topic.difficulty}
               </span>
             )}
-            <span className="text-[10px] text-brand-muted font-medium">
-              {topic.lines.length} lines
-            </span>
+            <span className="text-[10px] text-brand-muted font-medium">{topic.lines.length} lines</span>
           </div>
         </div>
 
@@ -62,21 +67,40 @@ function TopicItem({ topic, isActive }: { topic: DialogueTopic; isActive: boolea
             onClick={(e) => { e.stopPropagation(); toggleFavorite(topic.id); }}
             className={cn(
               'p-1 rounded-md transition-colors',
-              isFav
-                ? 'text-red-500 opacity-100'
-                : 'text-brand-muted opacity-0 group-hover:opacity-100 hover:text-red-400'
+              isFav ? 'text-red-500 opacity-100' : 'text-brand-muted opacity-0 group-hover:opacity-100 hover:text-red-400'
             )}
             title={isFav ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
           >
             <Heart size={13} fill={isFav ? 'currentColor' : 'none'} />
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); removeTopic(topic.id); }}
-            className="p-1 rounded-md text-brand-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-colors"
-            title="Remove topic"
-          >
-            <Trash2 size={13} />
-          </button>
+
+          {/* Confirm delete */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="p-1 rounded-md text-brand-muted opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-colors"
+                title="Remove topic"
+              >
+                <Trash2 size={13} />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove topic?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  &ldquo;{topic.title}&rdquo; will be permanently removed. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { removeTopic(topic.id); toast.success('Topic removed'); }}>
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <ChevronRight size={14} className={cn('text-brand-muted', isActive && 'text-primary')} />
         </div>
       </button>
@@ -86,6 +110,24 @@ function TopicItem({ topic, isActive }: { topic: DialogueTopic; isActive: boolea
 
 export default function Sidebar() {
   const { topics, currentTopicId, sidebarOpen, setDataPanelOpen, setSidebarOpen } = useAppStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [diffFilter,  setDiffFilter]  = useState<DiffFilter>('');
+
+  const filteredTopics = useMemo(() => {
+    let result = topics;
+    if (diffFilter) result = result.filter((t) => t.difficulty === diffFilter);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) result = result.filter((t) =>
+      t.title.toLowerCase().includes(q) || t.category?.toLowerCase().includes(q)
+    );
+    return result;
+  }, [topics, searchQuery, diffFilter]);
+
+  const diffPills: { label: string; value: DiffFilter }[] = [
+    { label: 'Beginner',     value: 'beginner' },
+    { label: 'Intermediate', value: 'intermediate' },
+    { label: 'Advanced',     value: 'advanced' },
+  ];
 
   return (
     <>
@@ -93,9 +135,7 @@ export default function Sidebar() {
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 z-20 bg-black/30 md:hidden"
           />
@@ -107,33 +147,78 @@ export default function Sidebar() {
         {sidebarOpen && (
           <motion.aside
             key="sidebar"
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
+            initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed md:relative z-20 top-0 left-0 h-full w-[85vw] max-w-xs md:w-64 bg-brand-surface border-r border-brand-border flex flex-col"
           >
             {/* Header */}
-            <div className="p-4 border-b border-brand-border">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-extrabold text-brand-strong text-sm uppercase tracking-wider">
-                  Topics
-                </h2>
+            <div className="p-4 border-b border-brand-border space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-extrabold text-brand-strong text-sm uppercase tracking-wider">Topics</h2>
                 <Badge variant="secondary">{topics.length}</Badge>
               </div>
               <Button variant="outline" size="sm" className="w-full text-sm gap-1.5" onClick={() => setDataPanelOpen(true)}>
                 <Plus size={14} /> Add Topic
               </Button>
+
+              {/* Search */}
+              <div className="relative">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-brand-muted pointer-events-none" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search topics…"
+                  className="w-full pl-7 pr-7 py-1.5 text-xs rounded-lg border border-brand-border bg-brand-input text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-text">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {/* Difficulty filter pills */}
+              <div className="flex gap-1 flex-wrap">
+                {diffPills.map((pill) => (
+                  <button
+                    key={pill.value}
+                    onClick={() => setDiffFilter(diffFilter === pill.value ? '' : pill.value)}
+                    className={cn(
+                      'text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all',
+                      diffFilter === pill.value
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-brand-input text-brand-muted border-brand-border hover:border-primary/40 hover:text-primary'
+                    )}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Topic list */}
             <div className="flex-1 overflow-y-auto p-3 space-y-1">
               <AnimatePresence>
-                {topics.map((topic) => (
+                {filteredTopics.map((topic) => (
                   <TopicItem key={topic.id} topic={topic} isActive={topic.id === currentTopicId} />
                 ))}
               </AnimatePresence>
 
+              {/* No match empty state */}
+              {filteredTopics.length === 0 && topics.length > 0 && (
+                <div className="text-center py-8 text-brand-muted">
+                  <Search size={28} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm font-medium">No topics match.</p>
+                  <button
+                    onClick={() => { setSearchQuery(''); setDiffFilter(''); }}
+                    className="text-xs text-primary hover:underline mt-1"
+                  >
+                    Clear filter
+                  </button>
+                </div>
+              )}
+
+              {/* Truly empty */}
               {topics.length === 0 && (
                 <div className="text-center py-8 text-brand-muted">
                   <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
